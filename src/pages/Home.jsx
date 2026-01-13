@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import Footer from '../components/Footer'
-import { ArrowRight, CheckCircle, Shield, Truck, ShoppingBag, ShoppingCart, SearchX, User, Star, Store } from 'lucide-react'
+import { ArrowRight, CheckCircle, Shield, Truck, ShoppingBag, ShoppingCart, SearchX, User, Star, Store, MapPin } from 'lucide-react'
 
 const Home = () => {
   const [products, setProducts] = useState([])
   const [sellers, setSellers] = useState([])
+  const [recentReviews, setRecentReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState('All')
+  const { user } = useAuth()
   const { addToCart } = useCart()
   const [searchParams] = useSearchParams()
   const searchQuery = searchParams.get('q') || ''
@@ -19,7 +22,27 @@ const Home = () => {
   useEffect(() => {
     fetchProducts()
     fetchSellers()
+    fetchRecentReviews()
   }, [])
+
+  const fetchRecentReviews = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          *,
+          user:profiles(full_name, email, avatar_url),
+          product:products(name, image_url)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(8)
+
+      if (error) throw error
+      setRecentReviews(data)
+    } catch (error) {
+      console.error('Error fetching recent reviews:', error)
+    }
+  }
 
   const fetchProducts = async () => {
     try {
@@ -42,14 +65,36 @@ const Home = () => {
 
   const fetchSellers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: sellersData, error: sellersError } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'seller')
         .limit(10)
 
-      if (error) throw error
-      setSellers(data)
+      if (sellersError) throw sellersError
+
+      const sellersWithRatings = await Promise.all(sellersData.map(async (seller) => {
+        const { data: productsData } = await supabase
+          .from('products')
+          .select('id')
+          .eq('seller_id', seller.id)
+        
+        if (productsData && productsData.length > 0) {
+          const productIds = productsData.map(p => p.id)
+          const { data: reviewsData } = await supabase
+            .from('reviews')
+            .select('rating')
+            .in('product_id', productIds)
+          
+          if (reviewsData && reviewsData.length > 0) {
+            const avg = reviewsData.reduce((sum, r) => sum + r.rating, 0) / reviewsData.length
+            return { ...seller, avgRating: avg.toFixed(1), totalReviews: reviewsData.length }
+          }
+        }
+        return { ...seller, avgRating: 0, totalReviews: 0 }
+      }))
+
+      setSellers(sellersWithRatings)
     } catch (error) {
       console.error('Error fetching sellers:', error)
     }
@@ -82,7 +127,6 @@ const Home = () => {
   return (
     <div className="bg-gray-50 dark:bg-gray-950 min-h-screen flex flex-col font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
       
-      {/* Hero Section */}
       {!searchQuery && (
         <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-28">
@@ -107,9 +151,11 @@ const Home = () => {
                           <a href="#browse" className="inline-flex justify-center items-center px-6 py-3.5 text-base font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md">
                               Start Browsing
                           </a>
-                          <Link to="/register" className="inline-flex justify-center items-center px-6 py-3.5 text-base font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 transition-all">
-                              Become a Seller
-                          </Link>
+                          {(!user || user.role !== 'seller') && (
+                            <Link to={user ? "/seller-request" : "/register"} className="inline-flex justify-center items-center px-6 py-3.5 text-base font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 transition-all">
+                                Become a Seller
+                            </Link>
+                          )}
                       </div>
                       
                       <div className="mt-8 lg:mt-10 flex items-center justify-center lg:justify-start gap-4 sm:gap-6 text-sm text-gray-500 dark:text-gray-400 font-medium">
@@ -135,10 +181,8 @@ const Home = () => {
         </div>
       )}
 
-      {/* Main Content */}
       <main id="browse" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 w-full flex-grow">
         
-        {/* Category Filter */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
             <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
@@ -156,8 +200,7 @@ const Home = () => {
                   <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
-                      className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
-                          selectedCategory === cat 
+                      className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium transition-all ${selectedCategory === cat 
                           ? 'bg-blue-600 text-white shadow-md' 
                           : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
@@ -206,7 +249,6 @@ const Home = () => {
                     {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(product.price)}
                   </div>
                   
-                  {/* Quick Add Button - Hide if sold */}
                   {product.status !== 'sold' && (
                     <button 
                         onClick={(e) => handleQuickAdd(e, product)}
@@ -259,34 +301,154 @@ const Home = () => {
             
             <div className="flex gap-4 overflow-x-auto pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
               {sellers.map((seller) => (
-                <div key={seller.id} className="min-w-[240px] sm:min-w-[260px] snap-center bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="h-20 w-20 rounded-full bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-700 shadow-sm overflow-hidden mb-3">
-                      {seller.avatar_url ? (
-                        <img src={seller.avatar_url} alt={seller.full_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                          <User size={32} />
+                <div key={seller.id} className="min-w-[260px] snap-center bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group">
+                  <div className="h-20 bg-gradient-to-r from-blue-500 to-indigo-600 relative">
+                      <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2">
+                        <div className="h-20 w-20 rounded-full bg-white dark:bg-gray-900 p-1">
+                            <div className="h-full w-full rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden flex items-center justify-center">
+                                {seller.avatar_url ? (
+                                    <img src={seller.avatar_url} alt={seller.full_name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <User size={32} className="text-gray-400 dark:text-gray-500" />
+                                )}
+                            </div>
                         </div>
-                      )}
-                    </div>
-                    <h3 className="font-bold text-gray-900 dark:text-white line-clamp-1">
+                      </div>
+                  </div>
+                  <div className="pt-12 pb-6 px-5 flex flex-col items-center flex-grow">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white line-clamp-1 mb-1">
                       {seller.full_name || seller.email?.split('@')[0]}
                     </h3>
-                    <div className="flex items-center gap-1 mt-1 mb-4">
-                      <Store className="h-3 w-3 text-blue-500" />
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Verified Seller</span>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Store className="h-3.5 w-3.5 text-blue-500 fill-current" />
+                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Verified Seller</span>
                     </div>
-                    <button className="w-full py-2 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 text-blue-600 dark:text-blue-400 text-sm font-semibold hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700">
-                      Visit Shop
-                    </button>
+                    <div className="flex items-center gap-1 mb-3">
+                        <div className="flex text-yellow-400">
+                            <Star className={`h-3.5 w-3.5 ${seller.totalReviews > 0 ? 'fill-current' : 'opacity-30'}`} />
+                        </div>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                            {seller.totalReviews > 0 ? seller.avgRating : 'No reviews'}
+                        </span>
+                        {seller.totalReviews > 0 && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                                ({seller.totalReviews})
+                            </span>
+                        )}
+                    </div>
+                    {seller.address && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mb-4 line-clamp-1">
+                            <MapPin className="h-3 w-3" /> {seller.address}
+                        </p>
+                    )}
+                    <div className="mt-auto w-full pt-4">
+                        <Link 
+                        to={`/seller/${seller.id}`}
+                        className="w-full py-2.5 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-bold hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all border border-gray-200 dark:border-gray-700 hover:border-transparent flex items-center justify-center gap-2 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600"
+                        >
+                        Visit Shop <ArrowRight className="h-4 w-4 opacity-50 group-hover:opacity-100 transition-opacity" />
+                        </Link>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         )}
+
+        {!searchQuery && (
+          <div className="mt-24 sm:mt-32">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-4">Aman dan Terlindungi</h2>
+              <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+                Komunitas jual beli aman dan seru, tempat pembeli dan penjual berbagi review asli yang terverifikasi.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {recentReviews.length > 0 ? (
+                recentReviews.map((review) => (
+                  <div key={review.id} className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col h-full">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex text-blue-600">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} size={14} fill={i < review.rating ? "currentColor" : "none"} className={i >= review.rating ? "text-gray-200 dark:text-gray-700" : ""} />
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-gray-400">
+                        {new Date(review.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 mb-6 flex-grow italic">
+                      "{review.comment}"
+                    </p>
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-gray-800">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden border border-gray-200 dark:border-gray-700">
+                          {review.user?.avatar_url ? (
+                            <img src={review.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400"><User size={16} /></div>
+                          )}
+                        </div>
+                        <div className="leading-tight">
+                          <p className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-[80px]">
+                            {review.user?.full_name || review.user?.email?.split('@')[0]}
+                          </p>
+                          <p className="text-[10px] text-gray-500">Pembeli</p>
+                        </div>
+                      </div>
+                      <div className="h-10 w-10 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700 bg-gray-50">
+                        <img src={review.product?.image_url} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                  </div>
+                )) 
+              ) : (
+                [1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <div className="flex text-blue-600 mb-3"><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /></div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 italic">"Barangnya bagus banget, masih mulus sesuai deskripsi. Pengiriman cepat!"</p>
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-gray-800">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">U</div>
+                        <div><p className="text-xs font-bold text-gray-900 dark:text-white">User_{i}</p><p className="text-[10px] text-gray-500">Pembeli</p></div>
+                      </div>
+                      <div className="h-10 w-10 rounded-lg bg-gray-100"></div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </main>
+
+      {!searchQuery && (
+        <section className="relative bg-gray-900 py-20 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-30 pointer-events-none">
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-600 rounded-full blur-[120px]"></div>
+            <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-purple-600 rounded-full blur-[120px]"></div>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-6 tracking-tight">
+              Download Kurasi untuk <br className="hidden sm:block" /> iPhone dan Android
+            </h2>
+            <p className="text-gray-400 mb-10 max-w-xl mx-auto text-lg">
+              Dapatkan pengalaman belanja barang kurasi terbaik langsung dari smartphone kamu.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <a href="#" className="transform transition hover:scale-105 active:scale-95">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store" className="h-12 w-auto" />
+              </a>
+              <a href="#" className="transform transition hover:scale-105 active:scale-95">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" className="h-12 w-auto" />
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
       
       <Footer />
     </div>

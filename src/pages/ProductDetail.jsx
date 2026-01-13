@@ -12,6 +12,7 @@ const ProductDetail = () => {
   const { user } = useAuth()
   
   const [product, setProduct] = useState(null)
+  const [relatedProducts, setRelatedProducts] = useState([])
   const [loading, setLoading] = useState(true)
   
   // Review States
@@ -43,12 +44,32 @@ const ProductDetail = () => {
 
       if (error) throw error
       setProduct(data)
+      fetchRelatedProducts(data.category, data.id)
     } catch (error) {
       console.error('Error fetching product:', error)
       alert('Product not found!')
       navigate('/')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchRelatedProducts = async (category, currentId) => {
+    try {
+        const { data, error } = await supabase
+            .from('products')
+            .select(`
+                *,
+                seller:profiles(email)
+            `)
+            .eq('category', category)
+            .neq('id', currentId)
+            .limit(4)
+        
+        if (error) throw error
+        setRelatedProducts(data)
+    } catch (error) {
+        console.error('Error fetching related products:', error)
     }
   }
 
@@ -382,6 +403,44 @@ const ProductDetail = () => {
                 )}
             </div>
         </div>
+
+        {/* Similar Products Section */}
+        {relatedProducts.length > 0 && (
+            <div className="mt-20 border-t border-gray-200 dark:border-gray-800 pt-16">
+                <h2 className="text-2xl font-bold mb-8 dark:text-white">Similar Items</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    {relatedProducts.map((item) => (
+                        <Link key={item.id} to={`/product/${item.id}`} className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg transition-all duration-300">
+                            <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-800 relative">
+                                <img 
+                                    src={item.image_url} 
+                                    alt={item.name} 
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                />
+                                {item.status === 'sold' && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-[1px]">
+                                        <span className="bg-gray-900 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider transform -rotate-6">
+                                            Sold Out
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="p-4">
+                                <h3 className="font-bold text-gray-900 dark:text-white line-clamp-1 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    {item.name}
+                                </h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{item.category}</p>
+                                <div className="flex items-center justify-between">
+                                    <span className="font-bold text-blue-600 dark:text-blue-400 text-sm">
+                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.price)}
+                                    </span>
+                                </div>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </div>
+        )}
       </div>
     </div>
   )

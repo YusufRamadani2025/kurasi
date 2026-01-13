@@ -17,6 +17,8 @@ import Checkout from './pages/Checkout'
 import OrderHistory from './pages/OrderHistory'
 import CartDrawer from './components/CartDrawer'
 
+import SellerProfile from './pages/SellerProfile'
+
 function App() {
   return (
     <ThemeProvider>
@@ -35,6 +37,7 @@ function App() {
                 <Route path="/add-product" element={<AddProduct />} />
                 <Route path="/edit-product/:id" element={<EditProduct />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
+                <Route path="/seller/:id" element={<SellerProfile />} />
                 <Route path="/my-shop" element={<SellerDashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/checkout" element={<Checkout />} />
