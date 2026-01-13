@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import { Store, ArrowLeft, Loader2 } from 'lucide-react'
+import { useToast } from '../context/ToastContext'
 
 const SellerRequest = () => {
     const [shopName, setShopName] = useState('')
@@ -10,11 +11,12 @@ const SellerRequest = () => {
     const [loading, setLoading] = useState(false)
     const { user } = useAuth()
     const navigate = useNavigate()
+    const toast = useToast()
 
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!user) {
-            alert('You must be logged in to apply.')
+            toast.error('You must be logged in to apply.')
             navigate('/login')
             return
         }
@@ -33,11 +35,11 @@ const SellerRequest = () => {
 
             if (error) throw error
 
-            alert('Request sent successfully! Please wait for admin approval.')
+            toast.success('Request sent successfully! Please wait for admin approval.')
             navigate('/')
         } catch (error) {
             console.error('Error sending request:', error)
-            alert('Failed to send request: ' + error.message)
+            toast.error('Failed to send request: ' + error.message)
         } finally {
             setLoading(false)
         }

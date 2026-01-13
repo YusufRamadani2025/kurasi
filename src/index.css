@@ -5,6 +5,19 @@
 @theme {
   --font-sans: "Inter", system-ui, sans-serif;
   
+  /* Premium Midnight/Obsidian Palette */
+  --color-gray-50: #fbfbfc;
+  --color-gray-100: #f0f1f3;
+  --color-gray-200: #dfe1e6;
+  --color-gray-300: #c4c7d0;
+  --color-gray-400: #a1a6b3;
+  --color-gray-500: #7d8391;
+  --color-gray-600: #5e6473;
+  --color-gray-700: #464b59;
+  --color-gray-800: #2b303b;  /* Surface/Card Lighter */
+  --color-gray-900: #1a1d26;  /* Surface/Card */
+  --color-gray-950: #0e1016;  /* Deep Background */
+
   --animate-slide-in: slide-in 0.3s ease-out forwards;
   --animate-slide-down: slide-down 0.2s ease-out forwards;
   --animate-slide-up: slide-up 0.3s ease-out forwards;
@@ -27,5 +40,5 @@
 
 body {
   font-family: var(--font-sans);
-  @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300;
+  @apply bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-300;
 }

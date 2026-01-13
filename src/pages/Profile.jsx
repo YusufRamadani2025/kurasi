@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { User, MapPin, Phone, Camera, Save, Loader2, Mail } from 'lucide-react';
 
 const Profile = () => {
@@ -9,6 +10,7 @@ const Profile = () => {
   const [updating, setUpdating] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -21,6 +23,8 @@ const Profile = () => {
       getProfile();
     }
   }, [user]);
+
+  // ... (keep getProfile and handleInputChange)
 
   const getProfile = async () => {
     try {
@@ -109,7 +113,7 @@ const Profile = () => {
       await updateProfile(publicUrl);
 
     } catch (error) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setUploading(false);
     }
@@ -140,10 +144,10 @@ const Profile = () => {
       await refreshProfile();
 
       if (!newAvatarUrl) {
-          alert('Profile updated successfully!');
+          toast.success('Profile updated successfully!');
       }
     } catch (error) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setUpdating(false);
     }

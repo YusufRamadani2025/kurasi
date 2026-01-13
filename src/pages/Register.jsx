@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import { UserPlus, Mail, Lock, CheckCircle } from 'lucide-react'
 
 const Register = () => {
@@ -11,6 +12,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false)
   const { signUp } = useAuth()
   const navigate = useNavigate()
+  const toast = useToast()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -23,7 +25,7 @@ const Register = () => {
       const { error } = await signUp({ email, password })
       if (error) throw error
       navigate('/')
-      alert('Registration successful! Please check your email to confirm.')
+      toast.success('Registration successful! Please check your email to confirm.')
     } catch (error) {
       setError(error.message || 'Failed to create an account')
     } finally {

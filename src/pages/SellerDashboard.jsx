@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Trash2, Edit, ArrowRight, Loader2 } from 'lucide-react'
+import { useToast } from '../context/ToastContext'
 
 const SellerDashboard = () => {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
+  const toast = useToast()
 
   useEffect(() => {
     if (user) fetchMyProducts()
@@ -43,8 +45,9 @@ const SellerDashboard = () => {
       
       // Update UI
       setProducts(products.filter(p => p.id !== id))
+      toast.success('Product deleted successfully')
     } catch (error) {
-      alert('Error deleting product: ' + error.message)
+      toast.error('Error deleting product: ' + error.message)
     }
   }
 

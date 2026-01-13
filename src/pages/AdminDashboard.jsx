@@ -3,12 +3,14 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { Loader2, ShieldCheck, Users, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { useToast } from '../context/ToastContext'
 
 const AdminDashboard = () => {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
   const navigate = useNavigate()
+  const toast = useToast()
 
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -64,11 +66,11 @@ const AdminDashboard = () => {
         if (profileError) throw profileError
 
         fetchRequests()
-        alert('User approved as Seller!')
+        toast.success('User approved as Seller!')
 
     } catch (error) {
         console.error('Error approving:', error)
-        alert('Failed to approve.')
+        toast.error('Failed to approve.')
     }
   }
 

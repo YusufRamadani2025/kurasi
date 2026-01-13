@@ -5,10 +5,10 @@ const Footer = () => {
   return (
     <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pt-16 pb-8 font-sans transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           
           {/* Brand Column */}
-          <div className="space-y-6">
+          <div className="space-y-6 flex flex-col items-center sm:items-start text-center sm:text-left">
             <Link to="/" className="flex items-center gap-2.5 group">
               <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 p-2 rounded-lg shadow-sm group-hover:shadow-md transition-all">
                 <Star className="h-5 w-5 text-white fill-current" />
@@ -35,7 +35,7 @@ const Footer = () => {
           </div>
 
           {/* Links 1 */}
-          <div>
+          <div className="text-center sm:text-left">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Marketplace</h3>
             <ul className="space-y-3">
               <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm font-medium">New Arrivals</a></li>
@@ -46,7 +46,7 @@ const Footer = () => {
           </div>
 
           {/* Links 2 */}
-          <div>
+          <div className="text-center sm:text-left">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Company</h3>
             <ul className="space-y-3">
               <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm font-medium">About Us</a></li>
@@ -57,7 +57,7 @@ const Footer = () => {
           </div>
 
           {/* Newsletter */}
-          <div>
+          <div className="text-center sm:text-left">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Stay Updated</h3>
             <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">Subscribe to our newsletter for the latest drops and updates.</p>
             <form className="flex flex-col gap-2">
@@ -73,14 +73,14 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-gray-200 dark:border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-400 dark:text-gray-500 text-sm">
+        <div className="border-t border-gray-200 dark:border-gray-800 pt-8 flex flex-col items-center justify-between gap-6 sm:flex-row">
+          <p className="text-gray-400 dark:text-gray-500 text-sm order-2 sm:order-1">
             &copy; 2026 Kurasi Inc. All rights reserved.
           </p>
-          <div className="flex gap-6">
-            <a href="#" className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white text-sm font-medium">Privacy Policy</a>
-            <a href="#" className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white text-sm font-medium">Terms of Service</a>
-            <a href="#" className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white text-sm font-medium">Cookies</a>
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 order-1 sm:order-2">
+            <a href="#" className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium uppercase tracking-tighter">Privacy Policy</a>
+            <a href="#" className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium uppercase tracking-tighter">Terms of Service</a>
+            <a href="#" className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-medium uppercase tracking-tighter">Cookies</a>
           </div>
         </div>
       </div>

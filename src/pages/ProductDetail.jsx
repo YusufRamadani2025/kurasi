@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import { ArrowLeft, Mail, ShieldCheck, UserCheck, Star, Calendar, ShoppingCart, Camera, Loader2, User, Share2 } from 'lucide-react'
 
 const ProductDetail = () => {
@@ -10,6 +11,7 @@ const ProductDetail = () => {
   const navigate = useNavigate()
   const { addToCart } = useCart()
   const { user } = useAuth()
+  const toast = useToast()
   
   const [product, setProduct] = useState(null)
   const [relatedProducts, setRelatedProducts] = useState([])
@@ -47,12 +49,14 @@ const ProductDetail = () => {
       fetchRelatedProducts(data.category, data.id)
     } catch (error) {
       console.error('Error fetching product:', error)
-      alert('Product not found!')
+      toast.error('Product not found!')
       navigate('/')
     } finally {
       setLoading(false)
     }
   }
+
+  // ... (keep fetchRelatedProducts and fetchReviews)
 
   const fetchRelatedProducts = async (category, currentId) => {
     try {
@@ -117,7 +121,7 @@ const ProductDetail = () => {
   const handleAddToCart = () => {
     if (product) {
         addToCart(product)
-        alert('Product added to cart!');
+        toast.success('Product added to cart!');
     }
   }
 
@@ -159,12 +163,12 @@ const ProductDetail = () => {
       setReviewComment('');
       setReviewImage(null);
       setReviewRating(5);
-      alert('Thank you for your review!');
+      toast.success('Thank you for your review!');
       fetchReviews();
       checkPurchaseStatus();
 
     } catch (error) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setSubmittingReview(false);
     }

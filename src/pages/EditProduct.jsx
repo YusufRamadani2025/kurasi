@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { Package, Upload, ArrowLeft, Loader2 } from 'lucide-react'
+import { useToast } from '../context/ToastContext'
 
 const EditProduct = () => {
   const { id } = useParams()
@@ -17,6 +18,7 @@ const EditProduct = () => {
   const [uploading, setUploading] = useState(false)
   const { user } = useAuth()
   const navigate = useNavigate()
+  const toast = useToast()
 
   useEffect(() => {
     fetchProduct()
@@ -34,7 +36,7 @@ const EditProduct = () => {
       
       // Security check: only owner can edit
       if (user && data.seller_id !== user.id && user.role !== 'admin') {
-          alert("You don't have permission to edit this product.")
+          toast.error("You don't have permission to edit this product.")
           navigate('/my-shop')
           return
       }
@@ -47,7 +49,7 @@ const EditProduct = () => {
       setImagePreview(data.image_url)
     } catch (error) {
       console.error('Error fetching product:', error)
-      alert('Error fetching product details.')
+      toast.error('Error fetching product details.')
       navigate('/my-shop')
     } finally {
       setLoading(false)
@@ -103,11 +105,11 @@ const EditProduct = () => {
 
       if (dbError) throw dbError
 
-      alert('Product updated successfully!')
+      toast.success('Product updated successfully!')
       navigate('/my-shop')
     } catch (error) {
       console.error('Error updating product:', error)
-      alert('Failed to update product: ' + error.message)
+      toast.error('Failed to update product: ' + error.message)
     } finally {
       setUploading(false)
     }
